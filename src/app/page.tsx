@@ -12,12 +12,26 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Video, Phone } from "lucide-react";
 import { useAuthStore } from "@/store/use-auth-store";
+import { useCall } from "@/hooks/use-call";
+import { CallModal } from "@/components/call/call-modal";
+import { CallScreen } from "@/components/call/call-screen";
 
 export default function Home() {
   const { onlineUsers, rooms, messages, loadMessages, sendMessage, sendFile } =
     useChat();
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
   const { user: currentUser } = useAuthStore();
+
+  const {
+    isIncomingCall,
+    isCallActive,
+    remoteStream,
+    localStream,
+    initiateCall,
+    acceptCall,
+    rejectCall,
+    endCall,
+  } = useCall({ roomId: selectedRoom?._id || "" });
 
   const handleRoomSelect = (room: Room) => {
     setSelectedRoom(room);
@@ -52,6 +66,20 @@ export default function Home() {
       (member) => String(member._id) !== String(currentUser?.id)
     );
     return otherUser?.avatar;
+  };
+
+  const handleVideoCallClick = () => {
+    console.log("Video call button clicked", {
+      roomId: selectedRoom?._id,
+      currentUser: currentUser?.id,
+      isCallActive,
+    });
+
+    try {
+      initiateCall();
+    } catch (error) {
+      console.error("Error initiating call:", error);
+    }
   };
 
   return (
@@ -100,7 +128,12 @@ export default function Home() {
                   <Button variant="ghost" size="icon">
                     <Phone className="w-4 h-4" />
                   </Button>
-                  <Button variant="ghost" size="icon">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={handleVideoCallClick}
+                    disabled={isCallActive}
+                  >
                     <Video className="w-4 h-4" />
                   </Button>
                 </div>
@@ -113,6 +146,20 @@ export default function Home() {
                 roomId={selectedRoom._id}
                 onSend={handleSendMessage}
                 onFileSelect={handleFileSelect}
+              />
+
+              <CallModal
+                isOpen={isIncomingCall}
+                callerName={getRoomName(selectedRoom)}
+                onAccept={acceptCall}
+                onReject={rejectCall}
+              />
+
+              <CallScreen
+                isOpen={isCallActive}
+                localStream={localStream}
+                remoteStream={remoteStream}
+                onEndCall={endCall}
               />
             </>
           ) : (

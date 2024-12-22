@@ -8,7 +8,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Smile, PaperclipIcon } from "lucide-react";
+import { Smile, PaperclipIcon, Video } from "lucide-react";
 import data from "@emoji-mart/data";
 import Picker from "@emoji-mart/react";
 import { toast } from "@/hooks/use-toast";
@@ -19,6 +19,8 @@ interface ChatInputProps {
   roomId: string;
   onTyping?: (roomId: string) => void;
   onStopTyping?: (roomId: string) => void;
+  onVideoCall?: () => void;
+  isCallActive?: boolean;
 }
 
 export function ChatInput({
@@ -27,12 +29,14 @@ export function ChatInput({
   roomId,
   onTyping,
   onStopTyping,
+  onVideoCall,
+  isCallActive,
 }: ChatInputProps) {
   const [message, setMessage] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const typingTimeoutRef = useRef<NodeJS.Timeout>();
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Auto resize textarea
   useEffect(() => {
@@ -46,7 +50,7 @@ export function ChatInput({
 
   const handleMessageChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setMessage(e.target.value);
-    
+
     onTyping?.(roomId);
 
     if (typingTimeoutRef.current) {
@@ -130,6 +134,16 @@ export function ChatInput({
           disabled={isUploading}
         >
           <PaperclipIcon className="w-5 h-5" />
+        </Button>
+
+        <Button
+          variant="ghost"
+          size="icon"
+          className="shrink-0"
+          onClick={onVideoCall}
+          disabled={isCallActive}
+        >
+          <Video className="w-5 h-5" />
         </Button>
 
         <Textarea

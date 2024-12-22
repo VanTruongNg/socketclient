@@ -10,10 +10,15 @@ export const useLogin = () => {
 
   return useMutation({
     mutationFn: async (data: LoginDto) => {
-      const response = await api.post<{ user: User }>('/auth/login', data)
+      const response = await api.post('/auth/login', data)
       return response.data
     },
     onSuccess: (data) => {
+      localStorage.setItem('token', data.token)
+      localStorage.setItem('socket_token', data.socket_token)
+      
+      api.defaults.headers.common['Authorization'] = `Bearer ${data.token}`
+      
       setUser(data.user)
       router.push('/')
     }
@@ -43,6 +48,11 @@ export const useLogout = () => {
       await api.post('/auth/logout')
     },
     onSuccess: () => {
+      localStorage.removeItem('token')
+      localStorage.removeItem('socket_token')
+      
+      delete api.defaults.headers.common['Authorization']
+      
       clearUser()
       router.push('/login')
     }
@@ -60,7 +70,6 @@ export const useProfile = () => {
         const response = await api.get<User>('/auth/profile')
         return response.data
       } catch (error) {
-        // Nếu lỗi 401, xóa user và redirect về login
         if (error.response?.status === 401) {
           clearUser()
           router.push('/login')
@@ -74,7 +83,6 @@ export const useProfile = () => {
     onError: () => {
       clearUser()
     },
-    // Chỉ fetch khi không có user data hoặc chưa authenticated
     enabled: !user || !isAuthenticated,
     staleTime: 5 * 60 * 1000,
     retry: false,
